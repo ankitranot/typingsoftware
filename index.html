@@ -1,131 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Notepad with 10-Minute Timer</title>
+  <meta charset="UTF-8">
+  <title>Notepad with Timer</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #74ABE2, #5563DE);
-      color: #fff;
-      padding: 20px;
-    }
-    h1 {
-      margin-bottom: 10px;
+      text-align: center;
+      margin: 40px;
+      background: #f7f7f7;
     }
     textarea {
       width: 80%;
-      max-width: 800px;
-      height: 250px;
-      font-size: 18px;
+      height: 200px;
       padding: 10px;
+      font-size: 18px;
       border-radius: 8px;
-      border: none;
+      border: 1px solid #ccc;
       outline: none;
       resize: none;
-      background: #fff;
-      color: #000;
-      margin-top: 15px;
     }
-    .info {
-      margin-top: 15px;
-      font-size: 18px;
-    }
-    .results {
+    .stats {
       margin-top: 20px;
-      padding: 15px;
-      background: rgba(0,0,0,0.3);
-      border-radius: 10px;
       font-size: 20px;
       font-weight: bold;
     }
+    .controls {
+      margin-top: 20px;
+    }
     button {
-      margin-top: 15px;
       padding: 10px 20px;
       font-size: 16px;
       border: none;
       border-radius: 6px;
-      background: #FF9800;
-      color: white;
       cursor: pointer;
+      background: #007bff;
+      color: white;
     }
     button:hover {
-      background: #e68900;
+      background: #0056b3;
     }
   </style>
 </head>
 <body>
-  <h1>📝 Notepad with 10-Minute Timer</h1>
+  <h2>⏱ Notepad with Timer</h2>
+  <p>Start typing and the timer will begin!</p>
 
   <textarea id="notepad" placeholder="Start typing here..."></textarea>
-  
-  <div class="info">
-    ⏳ Time Left: <span id="timer">10:00</span> | ⌨️ Keystrokes: <span id="strokes">0</span>
+
+  <div class="controls">
+    <label for="timeLimit">Set Time (seconds): </label>
+    <input type="number" id="timeLimit" value="60" min="5" max="3600">
+    <button onclick="resetNotepad()">Reset</button>
   </div>
 
-  <div class="results" id="results"></div>
-  <button onclick="resetNotepad()">Reset</button>
+  <div class="stats" id="stats">Time Left: 01:00 | Characters: 0</div>
+
+  <!-- Alarm sound -->
+  <audio id="alarmSound">
+    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
+    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.mp3" type="audio/mpeg">
+  </audio>
 
   <script>
-    let strokes = 0;
-    let duration = 600; // 10 minutes in seconds
-    let timeLeft = duration;
-    let interval = null;
+    let timer;
+    let timeLeft;
     let started = false;
+    let charCount = 0;
 
     const textarea = document.getElementById("notepad");
-    const timerDisplay = document.getElementById("timer");
-    const strokesDisplay = document.getElementById("strokes");
-    const results = document.getElementById("results");
+    const stats = document.getElementById("stats");
+    const timeInput = document.getElementById("timeLimit");
+    const alarm = document.getElementById("alarmSound");
 
-    function formatTime(seconds) {
-      const min = Math.floor(seconds / 60);
-      const sec = seconds % 60;
-      return `${min}:${sec.toString().padStart(2,"0")}`;
-    }
-
-    textarea.addEventListener("keydown", () => {
+    textarea.addEventListener("input", () => {
       if (!started) {
         startTimer();
         started = true;
       }
-      strokes++;
-      strokesDisplay.textContent = strokes;
+      charCount = textarea.value.length;
+      updateStats();
     });
 
     function startTimer() {
-      interval = setInterval(() => {
+      timeLeft = parseInt(timeInput.value);
+      timer = setInterval(() => {
         timeLeft--;
-        timerDisplay.textContent = formatTime(timeLeft);
+        updateStats();
         if (timeLeft <= 0) {
-          clearInterval(interval);
+          clearInterval(timer);
           textarea.disabled = true;
-          results.textContent = `✅ Time’s up! You typed ${strokes} keystrokes in 10 minutes.`;
+          alarm.play(); // play alarm sound
+          stats.textContent = `⏳ Time's up! You typed ${charCount} characters in ${formatTime(parseInt(timeInput.value))}.`;
         }
       }, 1000);
     }
 
-    function resetNotepad() {
-      clearInterval(interval);
-      strokes = 0;
-      timeLeft = duration;
-      started = false;
-      textarea.value = "";
-      textarea.disabled = false;
-      timerDisplay.textContent = formatTime(duration);
-      strokesDisplay.textContent = "0";
-      results.textContent = "";
+    function updateStats() {
+      stats.textContent = `Time Left: ${formatTime(timeLeft)} | Characters: ${charCount}`;
     }
 
-    // initialize timer display
-    timerDisplay.textContent = formatTime(duration);
+    function resetNotepad() {
+      clearInterval(timer);
+      textarea.disabled = false;
+      textarea.value = "";
+      charCount = 0;
+      timeLeft = parseInt(timeInput.value);
+      started = false;
+      updateStats();
+    }
+
+    function formatTime(seconds) {
+      let m = Math.floor(seconds / 60);
+      let s = seconds % 60;
+      return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    }
+
+    // Initialize stats
+    resetNotepad();
   </script>
 </body>
 </html>
