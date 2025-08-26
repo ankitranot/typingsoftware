@@ -54,6 +54,25 @@
       font-weight: bold;
       z-index: 1000;
     }
+    /* Exit Fullscreen Button */
+#exitFullscreenBtn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1001;
+  padding: 8px 15px;
+  font-size: 16px;
+  background: white;        /* changed from red to white */
+  color: #007bff;           /* blue text */
+  border: 2px solid #007bff;
+  border-radius: 5px;
+  cursor: pointer;
+  display: none; /* hidden by default */
+}
+#exitFullscreenBtn:hover {
+  background: #f0f0f0;      /* light gray on hover */
+}
+
     .controls {
       margin-top: 20px;
     }
@@ -86,6 +105,9 @@
   <!-- Timer / Stats -->
   <div class="stats" id="stats">Time Left: 01:00 | Characters: 0</div>
 
+  <!-- Exit Fullscreen Button -->
+  <button id="exitFullscreenBtn" onclick="exitFullscreen()">Exit Typing</button>
+
   <!-- Alarm sound -->
   <audio id="alarmSound">
     <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
@@ -109,12 +131,14 @@
     const timeInput = document.getElementById("timeLimit");
     const alarm = document.getElementById("alarmSound");
     const typingSound = document.getElementById("typingSound");
+    const exitBtn = document.getElementById("exitFullscreenBtn");
 
     textarea.addEventListener("input", () => {
       if (!started) {
         startTimer();
         started = true;
-        textarea.classList.add("fullscreen"); // expand editor
+        textarea.classList.add("fullscreen");
+        exitBtn.style.display = "block"; // show exit button
       }
       charCount = textarea.value.length;
       updateStats();
@@ -126,14 +150,16 @@
 
       timer = setInterval(() => {
         timeLeft--;
-        updateStats();
-        if (timeLeft <= 0) {
+        if (timeLeft > 0) {
+          updateStats();
+        } else {
           clearInterval(timer);
           textarea.disabled = true;
           typingSound.pause();
           typingSound.currentTime = 0;
+          exitBtn.style.display = "none"; // hide exit button
           alarm.play();
-          stats.textContent = `⏳ Time's up! You typed ${charCount} characters in ${formatTime(parseInt(timeInput.value))}.`;
+          stats.textContent = `⏳ Time's up! You typed ${charCount} characters | WPM: ${Math.floor(charCount / 5)}`;
         }
       }, 1000);
     }
@@ -152,7 +178,18 @@
       typingSound.pause();
       typingSound.currentTime = 0;
       textarea.classList.remove("fullscreen");
+      exitBtn.style.display = "none"; // hide exit button
       updateStats();
+    }
+
+    function exitFullscreen() {
+      clearInterval(timer);
+      textarea.disabled = false;
+      typingSound.pause();
+      typingSound.currentTime = 0;
+      textarea.classList.remove("fullscreen");
+      exitBtn.style.display = "none";
+      stats.textContent = `✋ Typing exited! You typed ${charCount} characters | WPM: ${Math.floor(charCount / 5)}`;
     }
 
     function formatTime(seconds) {
