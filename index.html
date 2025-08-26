@@ -55,24 +55,23 @@
       z-index: 1000;
     }
     /* Exit Fullscreen Button */
-#exitFullscreenBtn {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 1001;
-  padding: 8px 15px;
-  font-size: 16px;
-  background: white;        /* changed from red to white */
-  color: #007bff;           /* blue text */
-  border: 2px solid #007bff;
-  border-radius: 5px;
-  cursor: pointer;
-  display: none; /* hidden by default */
-}
-#exitFullscreenBtn:hover {
-  background: #f0f0f0;      /* light gray on hover */
-}
-
+    #exitFullscreenBtn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 1001;
+      padding: 8px 15px;
+      font-size: 16px;
+      background: white;
+      color: #007bff;
+      border: 2px solid #007bff;
+      border-radius: 5px;
+      cursor: pointer;
+      display: none; /* hidden by default */
+    }
+    #exitFullscreenBtn:hover {
+      background: #f0f0f0;
+    }
     .controls {
       margin-top: 20px;
     }
@@ -157,7 +156,7 @@
           textarea.disabled = true;
           typingSound.pause();
           typingSound.currentTime = 0;
-          exitBtn.style.display = "none"; // hide exit button
+          exitBtn.style.display = "none";
           alarm.play();
           stats.textContent = `⏳ Time's up! You typed ${charCount} characters | WPM: ${Math.floor(charCount / 5)}`;
         }
@@ -178,18 +177,28 @@
       typingSound.pause();
       typingSound.currentTime = 0;
       textarea.classList.remove("fullscreen");
-      exitBtn.style.display = "none"; // hide exit button
+      exitBtn.style.display = "none";
       updateStats();
     }
 
     function exitFullscreen() {
+      // Stop timer and typing sound
       clearInterval(timer);
       textarea.disabled = false;
       typingSound.pause();
       typingSound.currentTime = 0;
+
+      // Reset everything
       textarea.classList.remove("fullscreen");
       exitBtn.style.display = "none";
+      textarea.value = "";
+      charCount = 0;
+      timeLeft = parseInt(timeInput.value);
+      started = false;
+
+      // Show final WPM message
       stats.textContent = `✋ Typing exited! You typed ${charCount} characters | WPM: ${Math.floor(charCount / 5)}`;
+      updateStats();
     }
 
     function formatTime(seconds) {
