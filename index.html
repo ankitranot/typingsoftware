@@ -7,18 +7,31 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      margin: 40px;
+      margin: 0;
       background: #f7f7f7;
     }
     textarea {
-      width: 80%;
-      height: 200px;
-      padding: 10px;
-      font-size: 18px;
-      border-radius: 8px;
+      width: 90%;
+      height: 400px;
+      padding: 15px;
+      font-size: 20px;
+      border-radius: 10px;
       border: 1px solid #ccc;
       outline: none;
       resize: none;
+      transition: all 0.3s ease;
+    }
+    /* Fullscreen mode */
+    textarea.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      z-index: 1000;
+      font-size: 22px;
+      padding: 20px;
     }
     .stats {
       margin-top: 20px;
@@ -62,6 +75,12 @@
     <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.mp3" type="audio/mpeg">
   </audio>
 
+  <!-- Typing sound -->
+  <audio id="typingSound" loop>
+    <source src="https://actions.google.com/sounds/v1/office/keyboard_typing.ogg" type="audio/ogg">
+    <source src="https://actions.google.com/sounds/v1/office/keyboard_typing.mp3" type="audio/mpeg">
+  </audio>
+
   <script>
     let timer;
     let timeLeft;
@@ -72,11 +91,13 @@
     const stats = document.getElementById("stats");
     const timeInput = document.getElementById("timeLimit");
     const alarm = document.getElementById("alarmSound");
+    const typingSound = document.getElementById("typingSound");
 
     textarea.addEventListener("input", () => {
       if (!started) {
         startTimer();
         started = true;
+        textarea.classList.add("fullscreen"); // expand editor
       }
       charCount = textarea.value.length;
       updateStats();
@@ -84,12 +105,16 @@
 
     function startTimer() {
       timeLeft = parseInt(timeInput.value);
+      typingSound.play(); // start typing sound when timer begins
+
       timer = setInterval(() => {
         timeLeft--;
         updateStats();
         if (timeLeft <= 0) {
           clearInterval(timer);
           textarea.disabled = true;
+          typingSound.pause(); // stop typing sound
+          typingSound.currentTime = 0;
           alarm.play(); // play alarm sound
           stats.textContent = `⏳ Time's up! You typed ${charCount} characters in ${formatTime(parseInt(timeInput.value))}.`;
         }
@@ -107,6 +132,9 @@
       charCount = 0;
       timeLeft = parseInt(timeInput.value);
       started = false;
+      typingSound.pause();
+      typingSound.currentTime = 0;
+      textarea.classList.remove("fullscreen"); // back to normal size
       updateStats();
     }
 
