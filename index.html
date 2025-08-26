@@ -2,159 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Notepad with Timer</title>
+  <title>Typing Speed Test</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      margin: 40px;
-      background: #f7f7f7;
+      margin: 20px;
     }
     textarea {
       width: 90%;
-      height: 400px;
-      padding: 15px;
-      font-size: 20px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      outline: none;
-      resize: none;
-    }
-    .stats {
+      height: 300px;
+      font-size: 18px;
+      padding: 10px;
       margin-top: 20px;
-      font-size: 20px;
+    }
+    #stats {
+      margin-top: 15px;
+      font-size: 18px;
       font-weight: bold;
     }
-    .controls {
-      margin-top: 20px;
-    }
-    button {
+    #resetBtn {
+      margin-top: 15px;
       padding: 10px 20px;
       font-size: 16px;
-      border: none;
-      border-radius: 6px;
       cursor: pointer;
-      background: #007bff;
-      color: white;
-    }
-    button:hover {
-      background: #0056b3;
     }
   </style>
 </head>
 <body>
-  <h2>⏱ Notepad with Timer</h2>
-  <p>Start typing and the timer will begin! (Press <b>Enter</b> to end early)</p>
+  <h1>Typing Speed Test</h1>
+  
+  <label for="timeLimit">Set Time (seconds): </label>
+  <input type="number" id="timeLimit" value="600" min="5" max="3600">
 
+  <br><br>
   <textarea id="notepad" placeholder="Start typing here..."></textarea>
+  
+  <div id="stats">Time Left: 10:00 | Characters: 0</div>
+  
+  <button id="resetBtn">Reset</button>
 
-  <div class="controls">
-    <label for="timeLimit">Set Time (seconds): </label>
-    <input type="number" id="timeLimit" value="60" min="5" max="3600">
-    <button onclick="resetNotepad()">Reset</button>
-  </div>
-
-  <div class="stats" id="stats">Time Left: 01:00 | Characters: 0</div>
-
-  <!-- Alarm sound -->
-  <audio id="alarmSound">
-    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
-    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.mp3" type="audio/mpeg">
-  </audio>
-
-  <!-- Typing sound -->
-  <audio id="typeSound" src="https://www.soundjay.com/mechanical/keyboard-1.mp3" preload="auto"></audio>
+  <audio id="typingSound" src="https://www.fesliyanstudios.com/play-mp3/387" preload="auto"></audio>
 
   <script>
+    let textarea = document.getElementById("notepad");
+    let stats = document.getElementById("stats");
+    let timeInput = document.getElementById("timeLimit");
+    let resetBtn = document.getElementById("resetBtn");
+    let typingSound = document.getElementById("typingSound");
+
     let timer;
-    let timeLeft;
-    let started = false;
+    let timeLeft = 600; // default 10 min
     let charCount = 0;
+    let started = false;
     let startTime = 0;
 
-    const textarea = document.getElementById("notepad");
-    const stats = document.getElementById("stats");
-    const timeInput = document.getElementById("timeLimit");
-    const alarm = document.getElementById("alarmSound");
-    const typeSound = document.getElementById("typeSound");
-
-    textarea.addEventListener("input", () => {
-      if (!started) {
-        startTimer();
-        started = true;
-        startTime = Date.now();
-      }
-      charCount = textarea.value.length;
-      playTypeSound();
-      updateStats();
-    });
-
-    // Detect Enter key -> end test
-    textarea.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        endTest();
-      }
-    });
-
-    function playTypeSound() {
-      typeSound.currentTime = 0;
-      typeSound.play();
+    function updateStats() {
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+      let formatted = `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+      stats.textContent = `Time Left: ${formatted} | Characters: ${charCount}`;
     }
 
     function startTimer() {
-      timeLeft = parseInt(timeInput.value);
       timer = setInterval(() => {
-        timeLeft--;
-        updateStats();
-        if (timeLeft <= 0) {
+        if (timeLeft > 0) {
+          timeLeft--;
+          updateStats();
+        } else {
+          clearInterval(timer);
           endTest();
         }
       }, 1000);
     }
 
     function endTest() {
-      clearInterval(timer);
       textarea.disabled = true;
-      let totalTimeTaken = (Date.now() - startTime) / 1000; // in seconds
-      let timeMinutes = totalTimeTaken / 60;
-      let wpm = Math.round((charCount / 5) / timeMinutes);
-      alarm.play();
+      typingSound.pause();
+      typingSound.currentTime = 0;
 
-      let resultMsg = `✅ Test Over!\n\nCharacters Typed: ${charCount}\nTime Taken: ${formatTime(Math.round(totalTimeTaken))}\nWPM: ${wpm}\n\n`;
+      let timeTaken = (Date.now() - startTime) / 60000; // minutes
+      let wpm = Math.floor((charCount / 5) / timeTaken);
+      let result = wpm > 30 ? "✅ Passed" : "❌ Fail";
 
-      if (wpm > 30) {
-        resultMsg += "🎉 Result: PASS ✅";
-      } else {
-        resultMsg += "❌ Result: FAIL";
+      alert(`Test Over!\nCharacters: ${charCount}\nTime Taken: ${timeTaken.toFixed(2)} mins\nWPM: ${wpm}\nResult: ${result}`);
+    }
+
+    textarea.addEventListener("input", () => {
+      if (!started) {
+        started = true;
+        timeLeft = parseInt(timeInput.value) || 600;
+        startTime = Date.now();
+        startTimer();
+        typingSound.loop = true;
+        typingSound.play();
       }
+      charCount = textarea.value.length;
+      updateStats();
+    });
 
-      alert(resultMsg);
-    }
+    textarea.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        clearInterval(timer);
+        endTest();
+      }
+    });
 
-    function updateStats() {
-      stats.textContent = `Time Left: ${formatTime(timeLeft)} | Characters: ${charCount}`;
-    }
+    resetBtn.addEventListener("click", resetNotepad);
 
     function resetNotepad() {
       clearInterval(timer);
       textarea.disabled = false;
       textarea.value = "";
       charCount = 0;
-      timeLeft = parseInt(timeInput.value);
+      timeLeft = parseInt(timeInput.value) || 600; // default 600 sec
       started = false;
       startTime = 0;
       updateStats();
     }
 
-    function formatTime(seconds) {
-      let m = Math.floor(seconds / 60);
-      let s = seconds % 60;
-      return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-    }
-
-    // Initialize stats
-    resetNotepad();
+    // show default 10:00 stats at load
+    window.onload = () => {
+      timeLeft = parseInt(timeInput.value) || 600;
+      updateStats();
+    };
   </script>
 </body>
 </html>
