@@ -54,24 +54,6 @@
       font-weight: bold;
       z-index: 1000;
     }
-    /* Exit Fullscreen Button */
-    #exitFullscreenBtn {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      z-index: 1001;
-      padding: 8px 15px;
-      font-size: 16px;
-      background: white;
-      color: #007bff;
-      border: 2px solid #007bff;
-      border-radius: 5px;
-      cursor: pointer;
-      display: none; /* hidden by default */
-    }
-    #exitFullscreenBtn:hover {
-      background: #f0f0f0;
-    }
     .controls {
       margin-top: 20px;
     }
@@ -91,7 +73,7 @@
 </head>
 <body>
   <h2>⏱ Notepad with Timer</h2>
-  <p>Start typing and the timer will begin!</p>
+  <p>Start typing and the timer will begin! Press <strong>Enter</strong> to finish early.</p>
 
   <textarea id="notepad" placeholder="Start typing here..."></textarea>
 
@@ -103,9 +85,6 @@
 
   <!-- Timer / Stats -->
   <div class="stats" id="stats">Time Left: 01:00 | Characters: 0</div>
-
-  <!-- Exit Fullscreen Button -->
-  <button id="exitFullscreenBtn" onclick="exitFullscreen()">Exit Typing</button>
 
   <!-- Alarm sound -->
   <audio id="alarmSound">
@@ -130,17 +109,23 @@
     const timeInput = document.getElementById("timeLimit");
     const alarm = document.getElementById("alarmSound");
     const typingSound = document.getElementById("typingSound");
-    const exitBtn = document.getElementById("exitFullscreenBtn");
 
     textarea.addEventListener("input", () => {
       if (!started) {
         startTimer();
         started = true;
         textarea.classList.add("fullscreen");
-        exitBtn.style.display = "block"; // show exit button
       }
       charCount = textarea.value.length;
       updateStats();
+    });
+
+    // Listen for Enter key to finish test
+    textarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault(); // prevent new line
+        finishTyping();
+      }
     });
 
     function startTimer() {
@@ -152,15 +137,23 @@
         if (timeLeft > 0) {
           updateStats();
         } else {
-          clearInterval(timer);
-          textarea.disabled = true;
-          typingSound.pause();
-          typingSound.currentTime = 0;
-          exitBtn.style.display = "none";
-          alarm.play();
-          stats.textContent = `⏳ Time's up! You typed ${charCount} characters | WPM: ${Math.floor(charCount / 5)}`;
+          finishTyping();
         }
       }, 1000);
+    }
+
+    function finishTyping() {
+      clearInterval(timer);
+      textarea.disabled = true;
+      typingSound.pause();
+      typingSound.currentTime = 0;
+      alarm.play();
+
+      const finalChars = charCount;
+      // WPM = (Characters Typed / 5) / 10
+      const finalWPM = (finalChars / 5) / 10;
+      stats.textContent = `⏳ Finished! You typed ${finalChars} characters | WPM: ${finalWPM.toFixed(2)}`;
+      textarea.classList.remove("fullscreen");
     }
 
     function updateStats() {
@@ -177,27 +170,6 @@
       typingSound.pause();
       typingSound.currentTime = 0;
       textarea.classList.remove("fullscreen");
-      exitBtn.style.display = "none";
-      updateStats();
-    }
-
-    function exitFullscreen() {
-      // Stop timer and typing sound
-      clearInterval(timer);
-      textarea.disabled = false;
-      typingSound.pause();
-      typingSound.currentTime = 0;
-
-      // Reset everything
-      textarea.classList.remove("fullscreen");
-      exitBtn.style.display = "none";
-      textarea.value = "";
-      charCount = 0;
-      timeLeft = parseInt(timeInput.value);
-      started = false;
-
-      // Show final WPM message
-      stats.textContent = `✋ Typing exited! You typed ${charCount} characters | WPM: ${Math.floor(charCount / 5)}`;
       updateStats();
     }
 
