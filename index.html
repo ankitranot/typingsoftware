@@ -1,122 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Notepad with Timer</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f7f7f7;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      height: 100vh;
-    }
-    h2, p, .controls, .stats {
-      margin: 10px 0;
-      text-align: center;
-    }
-    textarea {
-      width: 80%;
-      height: 250px;
-      padding: 15px;
-      font-size: 18px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      outline: none;
-      resize: none;
-      margin-top: 20px;
-    }
-    .controls {
-      margin-top: 10px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      background: #007bff;
-      color: white;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .popup {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #007bff;
-      color: white;
-      padding: 30px;
-      border-radius: 10px;
-      text-align: center;
-      box-shadow: 0 0 15px rgba(0,0,0,0.4);
-      width: 300px;
-    }
-    .popup h3, .popup p {
-      margin: 15px 0;
-    }
-    .popup button {
-      background: white;
-      color: #007bff;
-      margin-top: 15px;
-    }
-    .popup button:hover {
-      background: #e6e6e6;
-    }
-  </style>
-</head>
 <body>
-  <h2>⏱ Notepad with Timer</h2>
-  <p>Start typing and the timer will begin!</p>
+  <h2>⌨ Typing Speed Test</h2>
 
-  <div class="controls">
-    <label for="timeLimit">Set Time (seconds): </label>
-    <input type="number" id="timeLimit" value="600" min="5" max="3600">
-    <button onclick="resetNotepad()">Reset</button>
-  </div>
-
-  <div class="stats" id="stats">Time Left: 10:00 | Characters: 0</div>
-
+  <!-- Typing Area -->
   <textarea id="notepad" placeholder="Start typing here..."></textarea>
 
-  <!-- Popup -->
-  <div class="popup" id="resultPopup">
-    <h3 id="popupTitle"></h3>
-    <p id="popupDetails"></p>
-    <button onclick="closePopup()">Close</button>
+  <!-- Controls (Moved to bottom of textarea) -->
+  <div id="controls">
+    <label for="timeLimit">Set Time (seconds): </label>
+    <input type="number" id="timeLimit" value="600" min="5" max="3600">
+    <button id="resetBtn">Reset</button>
+    <p id="stats">Time Left: 10:00 | Characters: 0</p>
   </div>
 
-  <!-- Alarm sound -->
-  <audio id="alarmSound">
-    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
-    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.mp3" type="audio/mpeg">
-  </audio>
+  <!-- Result Popup -->
+  <div id="popup">
+    <h3>Test Result</h3>
+    <p id="popupMessage"></p>
+    <button id="closePopup">Close</button>
+  </div>
 
   <script>
-    let timer;
-    let timeLeft;
-    let started = false;
-    let charCount = 0;
-    let totalTime;
-
     const textarea = document.getElementById("notepad");
-    const stats = document.getElementById("stats");
     const timeInput = document.getElementById("timeLimit");
-    const alarm = document.getElementById("alarmSound");
-    const popup = document.getElementById("resultPopup");
-    const popupTitle = document.getElementById("popupTitle");
-    const popupDetails = document.getElementById("popupDetails");
+    const resetBtn = document.getElementById("resetBtn");
+    const stats = document.getElementById("stats");
+    const popup = document.getElementById("popup");
+    const popupMessage = document.getElementById("popupMessage");
+    const closePopup = document.getElementById("closePopup");
+
+    let timer, timeLeft = 600, started = false, charCount = 0, startTime = 0;
 
     textarea.addEventListener("input", () => {
       if (!started) {
-        startTimer();
         started = true;
+        startTime = Date.now();
+        timer = setInterval(updateTimer, 1000);
       }
       charCount = textarea.value.length;
       updateStats();
@@ -125,25 +43,40 @@
     textarea.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        endTest();
+        finishTest();
       }
     });
 
-    function startTimer() {
-      timeLeft = parseInt(timeInput.value);
-      totalTime = timeLeft;
-      timer = setInterval(() => {
+    resetBtn.addEventListener("click", resetNotepad);
+    closePopup.addEventListener("click", () => { popup.style.display = "none"; });
+
+    function updateTimer() {
+      if (timeLeft > 0) {
         timeLeft--;
         updateStats();
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          endTest();
-        }
-      }, 1000);
+      } else {
+        finishTest();
+      }
     }
 
     function updateStats() {
-      stats.textContent = `Time Left: ${formatTime(timeLeft)} | Characters: ${charCount}`;
+      const minutes = Math.floor(timeLeft / 60).toString().padStart(2, "0");
+      const seconds = (timeLeft % 60).toString().padStart(2, "0");
+      stats.textContent = `Time Left: ${minutes}:${seconds} | Characters: ${charCount}`;
+    }
+
+    function finishTest() {
+      clearInterval(timer);
+      const elapsedMinutes = (Date.now() - startTime) / 60000;
+      const wpm = Math.floor((charCount / 5) / elapsedMinutes);
+
+      let resultText = `⏱ Time Taken: ${Math.floor(elapsedMinutes*60)} seconds<br>
+                        ✍ Characters Typed: ${charCount}<br>
+                        ⚡ Speed: ${wpm} WPM<br>
+                        ${wpm > 30 ? "✅ Passed!" : "❌ Failed"}`;
+
+      popupMessage.innerHTML = resultText;
+      popup.style.display = "block";
     }
 
     function resetNotepad() {
@@ -151,42 +84,61 @@
       textarea.disabled = false;
       textarea.value = "";
       charCount = 0;
-      timeLeft = parseInt(timeInput.value);
+      timeLeft = parseInt(timeInput.value) || 600;
       started = false;
+      startTime = 0;
       updateStats();
     }
 
-    function formatTime(seconds) {
-      let m = Math.floor(seconds / 60);
-      let s = seconds % 60;
-      return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-    }
-
-    function endTest() {
-      clearInterval(timer);
-      textarea.disabled = true;
-      let timeTaken = (totalTime - timeLeft) / 60; 
-      if (timeTaken === 0) timeTaken = 1/60;
-      let wpm = Math.round((charCount / 5) / timeTaken);
-      let result = wpm > 30 ? "✅ Passed" : "❌ Failed";
-      alarm.play();
-
-      popupTitle.textContent = result;
-      popupDetails.innerHTML = `
-        Characters Typed: ${charCount}<br>
-        Time Taken: ${formatTime(totalTime - timeLeft)}<br>
-        Speed: ${wpm} WPM
-      `;
-      popup.style.display = "block";
-    }
-
-    function closePopup() {
-      popup.style.display = "none";
-      resetNotepad();
-    }
-
-    // Initialize stats
     resetNotepad();
   </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    #notepad {
+      width: 80%;
+      height: 200px;
+      margin: 20px auto;
+      display: block;
+      font-size: 18px;
+      padding: 10px;
+    }
+    #controls {
+      margin-top: 15px;
+    }
+    #popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #007BFF;
+      color: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    #popup h3 {
+      margin-bottom: 15px;
+    }
+    #popup p {
+      margin: 10px 0;
+      line-height: 1.6;
+    }
+    #popup button {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background: white;
+      color: #007BFF;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
 </body>
-</html>
