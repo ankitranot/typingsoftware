@@ -6,53 +6,24 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f7f7f7;
-    }
-    h2, p, .controls {
       text-align: center;
+      margin: 40px;
+      background: #f7f7f7;
     }
     textarea {
       width: 90%;
       height: 400px;
       padding: 15px;
       font-size: 20px;
-      border-radius: 10px;
+      border-radius: 8px;
       border: 1px solid #ccc;
       outline: none;
       resize: none;
-      transition: all 0.3s ease;
-      margin: 20px auto;
-      display: block;
     }
-    /* Fullscreen editor */
-    textarea.fullscreen {
-      position: fixed;
-      top: 50px;   /* leave space for timer bar */
-      left: 0;
-      width: 100vw;
-      height: calc(100vh - 50px);
-      border-radius: 0;
-      z-index: 900;
-      font-size: 22px;
-      padding: 20px;
-      margin: 0;
-    }
-    /* Timer bar (always visible) */
     .stats {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 50px;
-      background: #007bff;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin-top: 20px;
       font-size: 20px;
       font-weight: bold;
-      z-index: 1000;
     }
     .controls {
       margin-top: 20px;
@@ -73,7 +44,7 @@
 </head>
 <body>
   <h2>⏱ Notepad with Timer</h2>
-  <p>Start typing and the timer will begin! Press <strong>Enter</strong> to finish early.</p>
+  <p>Start typing and the timer will begin! (Press <b>Enter</b> to end early)</p>
 
   <textarea id="notepad" placeholder="Start typing here..."></textarea>
 
@@ -83,7 +54,6 @@
     <button onclick="resetNotepad()">Reset</button>
   </div>
 
-  <!-- Timer / Stats -->
   <div class="stats" id="stats">Time Left: 01:00 | Characters: 0</div>
 
   <!-- Alarm sound -->
@@ -93,67 +63,66 @@
   </audio>
 
   <!-- Typing sound -->
-  <audio id="typingSound" loop>
-    <source src="https://actions.google.com/sounds/v1/office/keyboard_typing.ogg" type="audio/ogg">
-    <source src="https://actions.google.com/sounds/v1/office/keyboard_typing.mp3" type="audio/mpeg">
-  </audio>
+  <audio id="typeSound" src="https://www.soundjay.com/mechanical/keyboard-1.mp3" preload="auto"></audio>
 
   <script>
     let timer;
     let timeLeft;
     let started = false;
     let charCount = 0;
+    let startTime = 0;
 
     const textarea = document.getElementById("notepad");
     const stats = document.getElementById("stats");
     const timeInput = document.getElementById("timeLimit");
     const alarm = document.getElementById("alarmSound");
-    const typingSound = document.getElementById("typingSound");
+    const typeSound = document.getElementById("typeSound");
 
     textarea.addEventListener("input", () => {
       if (!started) {
         startTimer();
         started = true;
-        textarea.classList.add("fullscreen");
+        startTime = Date.now();
       }
       charCount = textarea.value.length;
+      playTypeSound();
       updateStats();
     });
 
-    // Listen for Enter key to finish test
+    // Detect Enter key -> end test
     textarea.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
-        e.preventDefault(); // prevent new line
-        finishTyping();
+        e.preventDefault();
+        endTest();
       }
     });
 
+    function playTypeSound() {
+      typeSound.currentTime = 0;
+      typeSound.play();
+    }
+
     function startTimer() {
       timeLeft = parseInt(timeInput.value);
-      typingSound.play();
-
       timer = setInterval(() => {
         timeLeft--;
-        if (timeLeft > 0) {
-          updateStats();
-        } else {
-          finishTyping();
+        updateStats();
+        if (timeLeft <= 0) {
+          endTest();
         }
       }, 1000);
     }
 
-    function finishTyping() {
+    function endTest() {
       clearInterval(timer);
       textarea.disabled = true;
-      typingSound.pause();
-      typingSound.currentTime = 0;
+      let totalTimeTaken = (Date.now() - startTime) / 1000; // in seconds
+      let timeMinutes = totalTimeTaken / 60;
+      let wpm = Math.round((charCount / 5) / timeMinutes);
       alarm.play();
 
-      const finalChars = charCount;
-      // WPM = (Characters Typed / 5) / 10
-      const finalWPM = (finalChars / 5) / 10;
-      stats.textContent = `⏳ Finished! You typed ${finalChars} characters | WPM: ${finalWPM.toFixed(2)}`;
-      textarea.classList.remove("fullscreen");
+      stats.textContent = `✅ Test Over! You typed ${charCount} characters in ${formatTime(Math.round(totalTimeTaken))}.
+      WPM: ${wpm}`;
     }
 
     function updateStats() {
@@ -167,9 +136,7 @@
       charCount = 0;
       timeLeft = parseInt(timeInput.value);
       started = false;
-      typingSound.pause();
-      typingSound.currentTime = 0;
-      textarea.classList.remove("fullscreen");
+      startTime = 0;
       updateStats();
     }
 
