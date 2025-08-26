@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Notepad Typing Test</title>
+  <title>Notepad with Timer</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
       margin: 40px;
-      background: #f4f4f9;
+      background: #f7f7f7;
     }
     textarea {
       width: 90%;
-      height: 350px;
+      height: 400px;
       padding: 15px;
       font-size: 20px;
       border-radius: 8px;
@@ -20,7 +20,7 @@
       outline: none;
       resize: none;
     }
-    .stats, .results {
+    .stats {
       margin-top: 20px;
       font-size: 20px;
       font-weight: bold;
@@ -28,43 +28,65 @@
     .controls {
       margin-top: 20px;
     }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
     button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
       background: #007bff;
       color: white;
-      border: none;
     }
     button:hover {
       background: #0056b3;
     }
-    .pass {
-      color: green;
+
+    /* Popup styles */
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #007bff;
+      color: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      text-align: center;
+      z-index: 1000;
+      width: 320px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
-    .fail {
-      color: red;
+    .popup h2 {
+      margin-bottom: 15px;
+      font-size: 24px;
+    }
+    .popup p {
+      margin: 10px 0;
+      font-size: 18px;
+    }
+    .popup button {
+      margin-top: 15px;
+      background: #ff4757;
+    }
+    .popup button:hover {
+      background: #c82333;
     }
   </style>
 </head>
 <body>
-  <h2>⏱ Typing Speed Test</h2>
-  <p>Start typing and the timer will begin! Press <b>Enter</b> anytime to finish early.</p>
+  <h2>⏱ Notepad with Timer</h2>
+  <p>Start typing and the timer will begin!</p>
 
   <textarea id="notepad" placeholder="Start typing here..."></textarea>
 
   <div class="controls">
-    <label for="timeLimit">Set Time (seconds): </label>
-    <input type="number" id="timeLimit" value="600" min="5" max="3600">
+    <label for="timeLimit">Set Time (minutes): </label>
+    <input type="number" id="timeLimit" value="10" min="1" max="60">
     <button onclick="resetNotepad()">Reset</button>
   </div>
 
   <div class="stats" id="stats">Time Left: 10:00 | Characters: 0</div>
-  <div class="results" id="results"></div>
 
   <!-- Alarm sound -->
   <audio id="alarmSound">
@@ -72,18 +94,21 @@
     <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.mp3" type="audio/mpeg">
   </audio>
 
+  <!-- Popup -->
+  <div class="popup" id="resultPopup"></div>
+
   <script>
     let timer;
     let timeLeft;
     let started = false;
     let charCount = 0;
-    let timeTaken = 0;
+    let totalTime;
 
     const textarea = document.getElementById("notepad");
     const stats = document.getElementById("stats");
-    const results = document.getElementById("results");
     const timeInput = document.getElementById("timeLimit");
     const alarm = document.getElementById("alarmSound");
+    const popup = document.getElementById("resultPopup");
 
     textarea.addEventListener("input", () => {
       if (!started) {
@@ -94,24 +119,21 @@
       updateStats();
     });
 
-    // Finish test when Enter is pressed
-    textarea.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
+    textarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
         endTest();
       }
     });
 
     function startTimer() {
-      timeLeft = parseInt(timeInput.value);
-      timeTaken = 0;
+      totalTime = parseInt(timeInput.value) * 60;
+      timeLeft = totalTime;
       timer = setInterval(() => {
         timeLeft--;
-        timeTaken++;
         updateStats();
         if (timeLeft <= 0) {
           clearInterval(timer);
-          endTest(true);
+          endTest();
         }
       }, 1000);
     }
@@ -125,38 +147,42 @@
       textarea.disabled = false;
       textarea.value = "";
       charCount = 0;
-      timeLeft = parseInt(timeInput.value);
+      timeLeft = parseInt(timeInput.value) * 60;
       started = false;
-      timeTaken = 0;
-      results.innerHTML = "";
+      popup.style.display = "none";
       updateStats();
+    }
+
+    function endTest() {
+      clearInterval(timer);
+      textarea.disabled = true;
+      alarm.play();
+
+      let timeTaken = (totalTime - timeLeft) / 60;
+      if (timeTaken <= 0) timeTaken = totalTime / 60;
+
+      let wpm = Math.round((charCount / 5) / timeTaken);
+      let resultText = wpm > 30 ? "✅ Passed" : "❌ Failed";
+
+      popup.innerHTML = `
+        <h2>Test Result</h2>
+        <p>Characters Typed: ${charCount}</p>
+        <p>Time Taken: ${timeTaken.toFixed(2)} minutes</p>
+        <p>Speed: ${wpm} WPM</p>
+        <p>${resultText}</p>
+        <button onclick="closePopup()">Close</button>
+      `;
+      popup.style.display = "block";
+    }
+
+    function closePopup() {
+      popup.style.display = "none";
     }
 
     function formatTime(seconds) {
       let m = Math.floor(seconds / 60);
       let s = seconds % 60;
       return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-    }
-
-    function endTest(auto = false) {
-      clearInterval(timer);
-      textarea.disabled = true;
-      alarm.play();
-
-      let minutes = timeTaken / 60;
-      let wpm = Math.round((charCount / 5) / minutes);
-      if (!isFinite(wpm)) wpm = 0;
-
-      let resultText = wpm > 30 ? `<span class="pass">✅ Passed</span>` : `<span class="fail">❌ Failed</span>`;
-
-      results.innerHTML = `
-        <hr>
-        <h3>Test Results</h3>
-        <p>Characters Typed: <b>${charCount}</b></p>
-        <p>Time Taken: <b>${formatTime(timeTaken)}</b></p>
-        <p>WPM: <b>${wpm}</b></p>
-        <p>Result: ${resultText}</p>
-      `;
     }
 
     // Initialize stats
