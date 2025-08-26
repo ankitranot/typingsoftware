@@ -2,132 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Typing Speed Test</title>
+  <title>Notepad Typing Test</title>
   <style>
     body {
-      font-family: "Poppins", Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
+      font-family: Arial, sans-serif;
       text-align: center;
-      overflow-x: hidden;
+      margin: 40px;
+      background: #f4f4f9;
     }
-
-    header {
-      padding: 30px;
-      font-size: 32px;
-      font-weight: bold;
-      color: white;
-      animation: fadeInDown 1.5s ease-in-out;
-    }
-
-    .container {
-      background: white;
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-      animation: fadeIn 2s ease-in-out;
-    }
-
     textarea {
-      width: 95%;
-      height: 300px;
+      width: 90%;
+      height: 350px;
       padding: 15px;
-      font-size: 18px;
-      border-radius: 12px;
-      border: 2px solid #007bff;
+      font-size: 20px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
       outline: none;
       resize: none;
-      transition: box-shadow 0.3s ease;
     }
-
-    textarea:focus {
-      box-shadow: 0 0 12px #007bff;
-    }
-
-    .controls {
-      margin-top: 20px;
-      font-size: 18px;
-    }
-
-    input[type="number"] {
-      padding: 5px 10px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-
-    button {
-      margin-left: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #007bff;
-      color: white;
-      transition: transform 0.2s, background 0.3s;
-    }
-
-    button:hover {
-      background: #0056b3;
-      transform: scale(1.05);
-    }
-
     .stats {
       margin-top: 20px;
       font-size: 20px;
       font-weight: bold;
-      color: #333;
     }
-
-    /* Animations */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    .controls {
+      margin-top: 20px;
     }
-
-    @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-50px); }
-      to { opacity: 1; transform: translateY(0); }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
-
-    /* Vector Image */
-    .vector {
-      margin: 20px auto;
-      max-width: 300px;
-      animation: float 3s ease-in-out infinite;
+    button {
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
     }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+    button:hover {
+      background: #0056b3;
     }
   </style>
 </head>
 <body>
-  <header>⌨️ Typing Speed Test</header>
+  <h2>⏱ Typing Speed Test</h2>
+  <p>Start typing and the timer will begin! Press <b>Enter</b> anytime to finish early.</p>
 
-  <!-- Vector Illustration -->
-  <div class="vector">
-    <img src="https://cdn-icons-png.flaticon.com/512/4151/4151790.png" width="100%" alt="Typing Vector">
+  <textarea id="notepad" placeholder="Start typing here..."></textarea>
+
+  <div class="controls">
+    <label for="timeLimit">Set Time (seconds): </label>
+    <input type="number" id="timeLimit" value="600" min="5" max="3600">
+    <button onclick="resetNotepad()">Reset</button>
   </div>
 
-  <div class="container">
-    <p>Start typing in the box below. The timer will start when you begin typing!</p>
-
-    <textarea id="notepad" placeholder="Start typing here..."></textarea>
-
-    <div class="controls">
-      <label for="timeLimit">Set Time (seconds): </label>
-      <input type="number" id="timeLimit" value="600" min="60" max="3600">
-      <button onclick="resetNotepad()">Reset</button>
-    </div>
-
-    <div class="stats" id="stats">Time Left: 10:00 | Characters: 0</div>
-  </div>
+  <div class="stats" id="stats">Time Left: 10:00 | Characters: 0</div>
 
   <!-- Alarm sound -->
   <audio id="alarmSound">
@@ -140,7 +70,7 @@
     let timeLeft;
     let started = false;
     let charCount = 0;
-    let totalTime;
+    let timeTaken = 0;
 
     const textarea = document.getElementById("notepad");
     const stats = document.getElementById("stats");
@@ -156,21 +86,24 @@
       updateStats();
     });
 
-    // End test when Enter key pressed
-    textarea.addEventListener("keydown", function(event) {
+    // Finish test when Enter is pressed
+    textarea.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
+        event.preventDefault();
         endTest();
       }
     });
 
     function startTimer() {
       timeLeft = parseInt(timeInput.value);
-      totalTime = timeLeft;
+      timeTaken = 0;
       timer = setInterval(() => {
         timeLeft--;
+        timeTaken++;
         updateStats();
         if (timeLeft <= 0) {
-          endTest();
+          clearInterval(timer);
+          endTest(true);
         }
       }, 1000);
     }
@@ -186,21 +119,8 @@
       charCount = 0;
       timeLeft = parseInt(timeInput.value);
       started = false;
+      timeTaken = 0;
       updateStats();
-    }
-
-    function endTest() {
-      clearInterval(timer);
-      textarea.disabled = true;
-      alarm.play();
-
-      let timeTaken = (totalTime - timeLeft) / 60; // minutes
-      if (timeTaken <= 0) timeTaken = totalTime / 60;
-
-      let wpm = Math.round((charCount / 5) / timeTaken);
-      let result = wpm > 30 ? "✅ Passed!" : "❌ Failed!";
-
-      alert(`${result}\n\nTime Taken: ${formatTime(totalTime - timeLeft)}\nCharacters Typed: ${charCount}\nSpeed: ${wpm} WPM`);
     }
 
     function formatTime(seconds) {
@@ -209,7 +129,20 @@
       return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     }
 
-    // Initialize
+    function endTest(auto = false) {
+      clearInterval(timer);
+      textarea.disabled = true;
+      alarm.play();
+
+      let minutes = timeTaken / 60;
+      let wpm = Math.round((charCount / 5) / minutes);
+
+      let result = wpm > 30 ? "✅ Passed" : "❌ Failed";
+
+      alert(`Test Finished!\n\nCharacters Typed: ${charCount}\nTime Taken: ${formatTime(timeTaken)}\nWPM: ${wpm}\nResult: ${result}`);
+    }
+
+    // Initialize stats
     resetNotepad();
   </script>
 </body>
