@@ -5,128 +5,212 @@
   <title>Typing Speed Test</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Poppins", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
       text-align: center;
-      margin: 20px;
+      overflow-x: hidden;
     }
-    textarea {
-      width: 90%;
-      height: 300px;
-      font-size: 18px;
-      padding: 10px;
-      margin-top: 20px;
-    }
-    #stats {
-      margin-top: 15px;
-      font-size: 18px;
+
+    header {
+      padding: 30px;
+      font-size: 32px;
       font-weight: bold;
+      color: white;
+      animation: fadeInDown 1.5s ease-in-out;
     }
-    #resetBtn {
-      margin-top: 15px;
+
+    .container {
+      background: white;
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      animation: fadeIn 2s ease-in-out;
+    }
+
+    textarea {
+      width: 95%;
+      height: 300px;
+      padding: 15px;
+      font-size: 18px;
+      border-radius: 12px;
+      border: 2px solid #007bff;
+      outline: none;
+      resize: none;
+      transition: box-shadow 0.3s ease;
+    }
+
+    textarea:focus {
+      box-shadow: 0 0 12px #007bff;
+    }
+
+    .controls {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    input[type="number"] {
+      padding: 5px 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin-left: 10px;
       padding: 10px 20px;
       font-size: 16px;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
+      background: #007bff;
+      color: white;
+      transition: transform 0.2s, background 0.3s;
+    }
+
+    button:hover {
+      background: #0056b3;
+      transform: scale(1.05);
+    }
+
+    .stats {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-50px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Vector Image */
+    .vector {
+      margin: 20px auto;
+      max-width: 300px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
     }
   </style>
 </head>
 <body>
-  <h1>Typing Speed Test</h1>
-  
-  <label for="timeLimit">Set Time (seconds): </label>
-  <input type="number" id="timeLimit" value="600" min="5" max="3600">
+  <header>⌨️ Typing Speed Test</header>
 
-  <br><br>
-  <textarea id="notepad" placeholder="Start typing here..."></textarea>
-  
-  <div id="stats">Time Left: 10:00 | Characters: 0</div>
-  
-  <button id="resetBtn">Reset</button>
+  <!-- Vector Illustration -->
+  <div class="vector">
+    <img src="https://cdn-icons-png.flaticon.com/512/4151/4151790.png" width="100%" alt="Typing Vector">
+  </div>
 
-  <audio id="typingSound" src="https://www.fesliyanstudios.com/play-mp3/387" preload="auto"></audio>
+  <div class="container">
+    <p>Start typing in the box below. The timer will start when you begin typing!</p>
+
+    <textarea id="notepad" placeholder="Start typing here..."></textarea>
+
+    <div class="controls">
+      <label for="timeLimit">Set Time (seconds): </label>
+      <input type="number" id="timeLimit" value="600" min="60" max="3600">
+      <button onclick="resetNotepad()">Reset</button>
+    </div>
+
+    <div class="stats" id="stats">Time Left: 10:00 | Characters: 0</div>
+  </div>
+
+  <!-- Alarm sound -->
+  <audio id="alarmSound">
+    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
+    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.mp3" type="audio/mpeg">
+  </audio>
 
   <script>
-    let textarea = document.getElementById("notepad");
-    let stats = document.getElementById("stats");
-    let timeInput = document.getElementById("timeLimit");
-    let resetBtn = document.getElementById("resetBtn");
-    let typingSound = document.getElementById("typingSound");
-
     let timer;
-    let timeLeft = 600; // default 10 min
-    let charCount = 0;
+    let timeLeft;
     let started = false;
-    let startTime = 0;
+    let charCount = 0;
+    let totalTime;
 
-    function updateStats() {
-      let minutes = Math.floor(timeLeft / 60);
-      let seconds = timeLeft % 60;
-      let formatted = `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
-      stats.textContent = `Time Left: ${formatted} | Characters: ${charCount}`;
-    }
-
-    function startTimer() {
-      timer = setInterval(() => {
-        if (timeLeft > 0) {
-          timeLeft--;
-          updateStats();
-        } else {
-          clearInterval(timer);
-          endTest();
-        }
-      }, 1000);
-    }
-
-    function endTest() {
-      textarea.disabled = true;
-      typingSound.pause();
-      typingSound.currentTime = 0;
-
-      let timeTaken = (Date.now() - startTime) / 60000; // minutes
-      let wpm = Math.floor((charCount / 5) / timeTaken);
-      let result = wpm > 30 ? "✅ Passed" : "❌ Fail";
-
-      alert(`Test Over!\nCharacters: ${charCount}\nTime Taken: ${timeTaken.toFixed(2)} mins\nWPM: ${wpm}\nResult: ${result}`);
-    }
+    const textarea = document.getElementById("notepad");
+    const stats = document.getElementById("stats");
+    const timeInput = document.getElementById("timeLimit");
+    const alarm = document.getElementById("alarmSound");
 
     textarea.addEventListener("input", () => {
       if (!started) {
-        started = true;
-        timeLeft = parseInt(timeInput.value) || 600;
-        startTime = Date.now();
         startTimer();
-        typingSound.loop = true;
-        typingSound.play();
+        started = true;
       }
       charCount = textarea.value.length;
       updateStats();
     });
 
+    // End test when Enter key pressed
     textarea.addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
-        event.preventDefault();
-        clearInterval(timer);
         endTest();
       }
     });
 
-    resetBtn.addEventListener("click", resetNotepad);
+    function startTimer() {
+      timeLeft = parseInt(timeInput.value);
+      totalTime = timeLeft;
+      timer = setInterval(() => {
+        timeLeft--;
+        updateStats();
+        if (timeLeft <= 0) {
+          endTest();
+        }
+      }, 1000);
+    }
+
+    function updateStats() {
+      stats.textContent = `Time Left: ${formatTime(timeLeft)} | Characters: ${charCount}`;
+    }
 
     function resetNotepad() {
       clearInterval(timer);
       textarea.disabled = false;
       textarea.value = "";
       charCount = 0;
-      timeLeft = parseInt(timeInput.value) || 600; // default 600 sec
+      timeLeft = parseInt(timeInput.value);
       started = false;
-      startTime = 0;
       updateStats();
     }
 
-    // show default 10:00 stats at load
-    window.onload = () => {
-      timeLeft = parseInt(timeInput.value) || 600;
-      updateStats();
-    };
+    function endTest() {
+      clearInterval(timer);
+      textarea.disabled = true;
+      alarm.play();
+
+      let timeTaken = (totalTime - timeLeft) / 60; // minutes
+      if (timeTaken <= 0) timeTaken = totalTime / 60;
+
+      let wpm = Math.round((charCount / 5) / timeTaken);
+      let result = wpm > 30 ? "✅ Passed!" : "❌ Failed!";
+
+      alert(`${result}\n\nTime Taken: ${formatTime(totalTime - timeLeft)}\nCharacters Typed: ${charCount}\nSpeed: ${wpm} WPM`);
+    }
+
+    function formatTime(seconds) {
+      let m = Math.floor(seconds / 60);
+      let s = seconds % 60;
+      return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    }
+
+    // Initialize
+    resetNotepad();
   </script>
 </body>
 </html>
