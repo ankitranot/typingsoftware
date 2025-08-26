@@ -121,8 +121,15 @@
       let wpm = Math.round((charCount / 5) / timeMinutes);
       alarm.play();
 
-      stats.textContent = `✅ Test Over! You typed ${charCount} characters in ${formatTime(Math.round(totalTimeTaken))}.
-      WPM: ${wpm}`;
+      let resultMsg = `✅ Test Over!\n\nCharacters Typed: ${charCount}\nTime Taken: ${formatTime(Math.round(totalTimeTaken))}\nWPM: ${wpm}\n\n`;
+
+      if (wpm > 30) {
+        resultMsg += "🎉 Result: PASS ✅";
+      } else {
+        resultMsg += "❌ Result: FAIL";
+      }
+
+      alert(resultMsg);
     }
 
     function updateStats() {
